@@ -1,0 +1,83 @@
+--gunicorn.service--
+
+[Unit]
+Description=gunicorn daemon
+Requires=gunicorn.socket
+After=network.target
+
+[Service]
+Type=notify
+User=mike
+Group=www-data
+
+WorkingDirectory=/home/mike/Development/Programs/gamification_project
+ExecStart=/home/mike/.local/bin/gunicorn 'main:app'
+ExecReload=/bin/kill -s HUP $MAINPID
+KillMode=mixed
+TimeoutStopSec=5
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
+
+
+--gunicorn.socket--
+
+[Unit]
+Description=gunicorn socket
+
+[Socket]
+ListenStream=/tmp/gunicorn.sock
+# Our service won't need permissions for the socket, since it
+# inherits the file descriptor by socket activation
+# only the nginx daemon will need access to the socket
+SocketUser=www-data
+# Optionally restrict the socket permissions even more.
+# SocketMode=600
+
+[Install]
+WantedBy=sockets.target
+
+--nginx.conf--
+
+user www-data;
+worker_processes auto;
+pid /run/nginx.pid;
+
+events {
+	worker_connections 768;
+}
+
+http {
+
+	sendfile off;
+	types_hash_max_size 2048;
+
+	include /etc/nginx/mime.types;
+	default_type application/octet-stream;
+
+
+	ssl_protocols TLSv1 TLSv1.1 TLSv1.2 TLSv1.3; # Dropping SSLv3, ref: POODLE
+	ssl_prefer_server_ciphers on;
+
+	access_log /var/log/nginx/access.log;
+	error_log /var/log/nginx/error.log;
+
+	gzip on;
+
+	# gzip_vary on;
+	# gzip_proxied any;
+	# gzip_comp_level 6;
+	# gzip_buffers 16 8k;
+	# gzip_http_version 1.1;
+	gzip_types application/json;
+
+	server {
+		listen 80 default;
+		location / {
+			proxy_pass http://unix:/tmp/gunicorn.sock;
+		}
+	}
+	
+}
+
