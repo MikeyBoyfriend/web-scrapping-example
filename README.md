@@ -2,11 +2,17 @@
 A rarely handy Pythonic tool blueprint for lottery participators in israel
 
 Communication through HTTP to automate information handling from public sites.
-Tools used:
+
+## Tools used:
 
 Burp suite
+
 curl to python
-simplae formatting
+
+simple formatting
+
 Flask
+
 Gunicorn
+
 Nginx
